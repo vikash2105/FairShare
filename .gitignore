@@ -1,0 +1,17 @@
+# dependencies
+node_modules
+/.pnp
+.pnp.js
+
+# env files
+.env
+/frontend/.env
+/backend/.env
+
+# build
+dist
+build
+
+# misc
+.DS_Store
+*.log
