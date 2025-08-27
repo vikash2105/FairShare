@@ -1,101 +1,110 @@
+import { Expense } from "../models/Expense.js";
 import { Group } from "../models/Group.js";
 import { User } from "../models/User.js";
 import { Balance } from "../models/Balance.js";
-import { generateInviteCode } from "../utils/invite.js";
 
-export async function createGroup(req, res, next) {
-  try {
-    const { name, description } = req.body;
-    if (!name) return res.status(400).json({ error: "Name required" });
+function round2(n) {
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
 
-    let inviteCode;
-    while (true) {
-      inviteCode = generateInviteCode();
-      const exist = await Group.findOne({ inviteCode });
-      if (!exist) break;
-    }
+export async function addExpense(req, res) {
+  const { groupId, description, amount, paidBy, splitAmong } = req.body;
+  const amt = Number(amount);
 
-    const group = await Group.create({
-      name,
-      description,
-      inviteCode,
-      createdBy: req.user.id,
-      members: [req.user.id],
-    });
+  if (
+    !groupId ||
+    !description ||
+    !Number.isFinite(amt) ||
+    amt <= 0 ||
+    !paidBy ||
+    !Array.isArray(splitAmong) ||
+    splitAmong.length === 0
+  ) {
+    return res.status(400).json({ error: "Missing or invalid fields" });
+  }
 
-    // initialize balance for creator
-    await Balance.updateOne(
-      { groupId: group._id, userId: req.user.id },
-      { $setOnInsert: { balance: 0 } },
+  const group = await Group.findById(groupId);
+  if (!group) return res.status(404).json({ error: "Group not found" });
+
+  const isMember = group.members.map(String).includes(String(req.user.id));
+  if (!isMember) return res.status(403).json({ error: "Not a group member" });
+
+  // Create the expense
+  const expense = await Expense.create({
+    groupId,
+    description: String(description).trim(),
+    amount: amt,
+    paidBy,
+    splitAmong,
+    createdBy: req.user.id,
+  });
+
+  // Equal split across selected members
+  const share = round2(amt / splitAmong.length);
+
+  // Update balances: payer gets +amount, each selected member gets -share
+  await Promise.all([
+    Balance.updateOne(
+      { groupId, userId: paidBy },
+      { $inc: { balance: amt } },
       { upsert: true }
-    );
+    ),
+    ...splitAmong.map((uid) =>
+      Balance.updateOne(
+        { groupId, userId: uid },
+        { $inc: { balance: -share } },
+        { upsert: true }
+      )
+    ),
+  ]);
 
-    res.json(group);
-  } catch (err) {
-    next(err);
-  }
+  res.status(201).json({ ok: true, expenseId: expense._id });
 }
 
-export async function joinGroup(req, res, next) {
-  try {
-    const { inviteCode } = req.body;
-    const group = await Group.findOne({ inviteCode });
-    if (!group) return res.status(404).json({ error: "Invalid code" });
+export async function listExpenses(req, res) {
+  const { id } = req.params; // groupId
 
-    const already = group.members.find(
-      (m) => String(m) === String(req.user.id)
-    );
-    if (already) return res.status(400).json({ error: "Already a member" });
+  const expenses = await Expense.find({ groupId: id })
+    .sort({ date: -1 })
+    .lean();
 
-    group.members.push(req.user.id);
-    await group.save();
+  const userIds = Array.from(
+    new Set(expenses.flatMap((e) => [e.paidBy, ...e.splitAmong]))
+  );
 
-    await Balance.updateOne(
-      { groupId: group._id, userId: req.user.id },
-      { $setOnInsert: { balance: 0 } },
-      { upsert: true }
-    );
+  const users = await User.find({ _id: { $in: userIds } })
+    .select("_id name email")
+    .lean();
 
-    res.json({ ok: true });
-  } catch (err) {
-    next(err);
-  }
+  const uMap = new Map(users.map((u) => [String(u._id), u]));
+
+  res.json(
+    expenses.map((e) => ({
+      ...e,
+      paidByName: uMap.get(String(e.paidBy))?.name || "User",
+    }))
+  );
 }
 
-export async function myGroups(req, res, next) {
-  try {
-    const groups = await Group.find({ members: req.user.id }).select(
-      "_id name description inviteCode members createdAt"
-    );
-    res.json(groups);
-  } catch (err) {
-    next(err);
-  }
-}
+export async function getBalances(req, res) {
+  const { id } = req.params; // groupId
 
-export async function getGroup(req, res, next) {
-  try {
-    const group = await Group.findById(req.params.id).populate(
-      "members",
-      "_id name email"
-    );
-    if (!group) return res.status(404).json({ error: "Not found" });
+  const balances = await Balance.find({ groupId: id }).lean();
 
-    const memberDetails = group.members.map((m) => ({
-      _id: m._id,
-      name: m.name,
-      email: m.email,
-    }));
+  const users = await User.find({
+    _id: { $in: balances.map((b) => b.userId) },
+  })
+    .select("_id name email")
+    .lean();
 
-    res.json({
-      _id: group._id,
-      name: group.name,
-      description: group.description,
-      inviteCode: group.inviteCode,
-      members: group.members.map((m) => m._id),
-      memberDetails,
-    });
-  } catch (err) {
-    next(err);
-  }
+  const map = new Map(users.map((u) => [String(u._id), u]));
+
+  const out = balances.map((b) => ({
+    userId: b.userId,
+    userName: map.get(String(b.userId))?.name || "User",
+    userEmail: map.get(String(b.userId))?.email || "",
+    balance: round2(b.balance),
+  }));
+
+  res.json(out);
 }
