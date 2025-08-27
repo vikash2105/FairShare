@@ -1,0 +1,21 @@
+# Node modules (not needed for plain HTML/JS)
+node_modules/
+package-lock.json
+package.json
+
+# Build tools (not used anymore)
+vite.config.js
+postcss.config.cjs
+tailwind.config.js
+
+# Env files (keep local only)
+.env
+.env.local
+.env.*.local
+
+# OS-specific junk
+.DS_Store
+Thumbs.db
+
+# Git placeholders
+.gitkeep

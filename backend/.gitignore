@@ -1,0 +1,22 @@
+# Node dependencies
+node_modules/
+
+# Logs
+logs
+*.log
+
+# Env files (keep secrets local)
+.env
+.env.local
+.env.*.local
+
+# Testing & coverage
+coverage/
+
+# Build artifacts (if added later)
+dist/
+build/
+
+# OS junk
+.DS_Store
+Thumbs.db
