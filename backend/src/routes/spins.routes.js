@@ -1,9 +1,13 @@
 import { Router } from "express";
 import { history, spin } from "../controllers/spins.controller.js";
-import { requireAuth } from "../middleware/auth.js";
+import { authMiddleware } from "../middleware/auth.js";
 
-const r = Router();
-r.use(requireAuth);
-r.post("/group/:id/spin", spin);
-r.get("/group/:id/spins", history);
-export default r;
+const router = Router();
+
+// All spin routes require authentication
+router.use(authMiddleware);
+
+router.post("/group/:id/spin", spin);
+router.get("/group/:id/spins", history);
+
+export default router;

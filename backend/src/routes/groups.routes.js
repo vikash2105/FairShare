@@ -1,11 +1,20 @@
 import { Router } from "express";
-import { createGroup, getGroup, joinGroup, myGroups } from "../controllers/groups.controller.js";
-import { requireAuth } from "../middleware/auth.js";
+import {
+  createGroup,
+  getGroup,
+  joinGroup,
+  myGroups,
+} from "../controllers/groups.controller.js";
+import { authMiddleware } from "../middleware/auth.js";
 
-const r = Router();
-r.use(requireAuth);
-r.post("/", createGroup);
-r.post("/join", joinGroup);
-r.get("/mine", myGroups);
-r.get("/:id", getGroup);
-export default r;
+const router = Router();
+
+// all group routes require authentication
+router.use(authMiddleware);
+
+router.post("/", createGroup);
+router.post("/join", joinGroup);
+router.get("/mine", myGroups);
+router.get("/:id", getGroup);
+
+export default router;
