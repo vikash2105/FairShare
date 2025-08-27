@@ -4,6 +4,9 @@ import { Link } from "react-router-dom";
 
 export default function Dashboard({ user }) {
   const [groups, setGroups] = useState([]);
+  const [showCreate, setShowCreate] = useState(false);
+  const [showJoin, setShowJoin] = useState(false);
+
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [inviteCode, setInviteCode] = useState("");
@@ -19,6 +22,7 @@ export default function Dashboard({ user }) {
     setGroups([r.data, ...groups]);
     setName("");
     setDescription("");
+    setShowCreate(false);
     showSuccess("Group created successfully!");
   }
 
@@ -28,12 +32,13 @@ export default function Dashboard({ user }) {
     const refreshed = await api.get("/api/groups/mine");
     setGroups(refreshed.data);
     setInviteCode("");
+    setShowJoin(false);
     showSuccess("Joined group successfully!");
   }
 
   function showSuccess(message) {
     setSuccessMessage(message);
-    setTimeout(() => setSuccessMessage(""), 4000); // auto hide in 4s
+    setTimeout(() => setSuccessMessage(""), 4000);
   }
 
   return (
@@ -43,26 +48,80 @@ export default function Dashboard({ user }) {
         <h1 className="text-2xl font-bold text-gray-800">
           Welcome back, {user?.name || ""}! 👋
         </h1>
-        <p className="text-gray-600">
-          Manage your group expenses easily
-        </p>
+        <p className="text-gray-600">Manage your group expenses easily</p>
       </div>
 
       {/* Buttons */}
       <div className="flex justify-center gap-4 mb-10">
         <button
-          onClick={createGroup}
+          onClick={() => { setShowCreate(true); setShowJoin(false); }}
           className="px-6 py-3 bg-purple-600 text-white rounded-lg shadow hover:bg-purple-700 transition"
         >
           ➕ Create New Group
         </button>
         <button
-          onClick={joinGroup}
+          onClick={() => { setShowJoin(true); setShowCreate(false); }}
           className="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition"
         >
           🔗 Join Group
         </button>
       </div>
+
+      {/* Create Group Form */}
+      {showCreate && (
+        <div className="card max-w-md mx-auto mb-6">
+          <button
+            className="text-sm text-gray-500 mb-2"
+            onClick={() => setShowCreate(false)}
+          >
+            ← Back
+          </button>
+          <h2 className="text-lg font-semibold mb-4">Create New Group</h2>
+          <form onSubmit={createGroup} className="space-y-3">
+            <input
+              className="input w-full"
+              placeholder="Group Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <textarea
+              className="input w-full"
+              placeholder="Description (Optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            />
+            <button className="button w-full bg-purple-600 text-white">
+              Create Group
+            </button>
+          </form>
+        </div>
+      )}
+
+      {/* Join Group Form */}
+      {showJoin && (
+        <div className="card max-w-md mx-auto mb-6">
+          <button
+            className="text-sm text-gray-500 mb-2"
+            onClick={() => setShowJoin(false)}
+          >
+            ← Back
+          </button>
+          <h2 className="text-lg font-semibold mb-4">Join Group</h2>
+          <form onSubmit={joinGroup} className="space-y-3">
+            <input
+              className="input w-full"
+              placeholder="Enter Invite Code"
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value)}
+              required
+            />
+            <button className="button w-full bg-green-600 text-white">
+              Join Group
+            </button>
+          </form>
+        </div>
+      )}
 
       {/* Success Popup */}
       {successMessage && (
@@ -76,9 +135,7 @@ export default function Dashboard({ user }) {
         <div className="text-center text-gray-500 mt-10">
           <div className="text-5xl mb-2">👥</div>
           <p className="font-medium">No groups yet</p>
-          <p className="text-sm">
-            Create your first group or join an existing one
-          </p>
+          <p className="text-sm">Create your first group or join an existing one</p>
         </div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

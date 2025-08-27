@@ -1,19 +1,39 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 
-export default function ExpenseList({ expenses }) {
+export default function ExpenseList({ showAddExpense, setShowAddExpense }) {
+  // temporary local state (later you can fetch from API or context)
+  const [expenses, setExpenses] = useState([]);
+
+  useEffect(() => {
+    // Example: fake fetch
+    setExpenses([
+      { id: 1, title: "Dinner", amount: 40, paidBy: "Alice" },
+      { id: 2, title: "Movie", amount: 25, paidBy: "Bob" },
+    ]);
+  }, []);
+
   return (
     <div>
-      <h3 className="font-semibold mb-2">Expenses</h3>
-      <ul className="space-y-2">
-        {expenses.map(e => (
-          <li key={e._id} className="border rounded p-2">
-            <div className="font-medium">{e.description} — ${e.amount.toFixed(2)}</div>
-            <div className="text-sm text-gray-600">Paid by {e.paidByName}; split among {e.splitAmongDetails.map(s => s.name).join(", ")}</div>
-            <div className="text-xs text-gray-500">{new Date(e.date).toLocaleString()}</div>
-          </li>
-        ))}
-        {!expenses.length && <li className="text-sm text-gray-600">No expenses yet</li>}
-      </ul>
+      <h2 className="text-xl font-bold mb-4">Expenses</h2>
+
+      {expenses && expenses.length > 0 ? (
+        <ul className="space-y-2">
+          {expenses.map((exp) => (
+            <li
+              key={exp.id}
+              className="bg-gray-50 p-4 rounded-lg shadow flex justify-between"
+            >
+              <div>
+                <p className="font-medium">{exp.title}</p>
+                <p className="text-sm text-gray-500">Paid by {exp.paidBy}</p>
+              </div>
+              <span className="font-bold text-green-600">${exp.amount}</span>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-gray-500">No expenses yet.</p>
+      )}
     </div>
   );
 }

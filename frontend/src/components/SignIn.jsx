@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { api, setToken } from "../lib";
 
 export default function SignIn({ onAuth }) {
@@ -22,46 +22,56 @@ export default function SignIn({ onAuth }) {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-blue-50">
-      <div className="bg-white p-8 rounded-2xl shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-bold text-center mb-2">
-          Split Bills with Friends 💸
-        </h1>
-        <p className="text-center text-gray-600 mb-6">
-          Track expenses, settle debts, and keep friendships intact
-        </p>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">
+      <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md animate-fade-in">
+        {/* Branding / Title */}
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-extrabold text-gray-800 mb-2">
+            Welcome Back 👋
+          </h1>
+          <p className="text-gray-600 text-sm">
+            Sign in to <span className="font-semibold text-blue-600">FairShareAI</span>  
+            & split smarter with friends
+          </p>
+        </div>
 
+        {/* Form */}
         <form onSubmit={submit} className="space-y-4">
           <input
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
             placeholder="Email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
           />
           <input
-            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
             placeholder="Password"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-          {error && <div className="text-red-600 text-sm">{error}</div>}
+          {error && (
+            <div className="text-red-600 text-sm bg-red-50 p-2 rounded-md">
+              {error}
+            </div>
+          )}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition transform hover:scale-[1.02]"
           >
             Sign in
           </button>
         </form>
 
-        <p className="text-center text-sm text-gray-600 mt-4">
+        {/* Footer link */}
+        <p className="text-center text-sm text-gray-600 mt-6">
           Don’t have an account?{" "}
-          <a
-            href="/signup"
+          <Link
+            to="/signup"
             className="text-blue-600 hover:underline font-medium"
           >
             Sign up instead
-          </a>
+          </Link>
         </p>
       </div>
     </div>
