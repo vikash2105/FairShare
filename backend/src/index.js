@@ -14,35 +14,41 @@ dotenv.config();
 
 const app = express();
 
-// ✅ Global CORS - Moved to be the first middleware to handle preflight requests correctly
-// Allowed origins: dev + prod
+// ✅ Allowed origins: from env OR fallback
 const allowedOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(",").map((s) => s.trim())
   : [
-      "http://localhost:5173",
-      "https://fairshare-lyart.vercel.app",
+      "http://localhost:5173",               // local dev
+      "http://localhost:3000",               // (in case of CRA/Next)
+      "https://fairshare-lyart.vercel.app",  // deployed frontend
     ];
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      return callback(new Error("Not allowed by CORS"), false);
-    },
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    console.log("CORS request from:", origin); // 🔍 debug
 
-// This middleware is now placed after CORS.
-// It parses incoming JSON requests and should be after any middleware that handles pre-request logic like CORS.
+    // allow REST tools (Postman/curl) with no origin
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+// ✅ Apply CORS globally
+app.use(cors(corsOptions));
+
+// ✅ Explicitly handle preflight requests
+app.options("*", cors(corsOptions));
+
+// ✅ Parse incoming JSON
 app.use(express.json());
 
-// ✅ Handle preflight everywhere
-app.options("*", cors());
-
+// ✅ Health check route
 app.get("/", (_req, res) =>
   res.json({ ok: true, service: "friends-bills-backend" })
 );
@@ -54,7 +60,7 @@ app.use("/api/expenses", expensesRoutes);
 app.use("/api", spinsRoutes);
 app.use("/api/ai", aiRoutes);
 
-// ✅ Always return CORS headers even on errors
+// ✅ Error handler (always last)
 app.use(errorHandler);
 
 const port = process.env.PORT || 8080;
