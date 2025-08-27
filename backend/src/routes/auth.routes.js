@@ -1,3 +1,4 @@
+// src/routes/auth.routes.js
 import { Router } from "express";
 import { signup, signin, me } from "../controllers/auth.controller.js";
 import { requireAuth } from "../middleware/auth.js";
