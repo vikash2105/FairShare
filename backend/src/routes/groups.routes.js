@@ -5,11 +5,11 @@ import {
   joinGroup,
   myGroups,
 } from "../controllers/groups.controller.js";
-import { requireAuth } from "../middleware/auth.js"; // ✅ fixed import
+import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
-// all group routes require authentication
+// All group routes require authentication
 router.use(requireAuth);
 
 router.post("/", createGroup);
