@@ -1,20 +1,11 @@
-import { verifyJwt } from "../utils/jwt.js";
+import { Router } from "express";
+import { signup, signin, me } from "../controllers/auth.controller.js";
+import { requireAuth } from "../middleware/auth.js";
 
-export function requireAuth(req, res, next) {
-  try {
-    const auth = req.headers.authorization || "";
-    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
+const router = Router();
 
-    const payload = verifyJwt(token, process.env.JWT_SECRET);
-    req.user = {
-      id: payload.id,
-      email: payload.email,
-      name: payload.name,
-      isAnonymous: payload.isAnonymous,
-    };
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: "Invalid token" });
-  }
-}
+router.post("/signup", signup);
+router.post("/signin", signin);
+router.get("/me", requireAuth, me);
+
+export default router;

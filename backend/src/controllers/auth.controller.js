@@ -45,7 +45,6 @@ export async function signin(req, res, next) {
     const { email, password } = req.body;
     const user = await User.findOne({ email });
     if (!user || !user.password) {
-      // 🚨 safeguard for old "anonymous" accounts
       return res.status(400).json({ error: "Invalid credentials" });
     }
 

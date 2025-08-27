@@ -12,7 +12,11 @@ export default function App() {
 
   useEffect(() => {
     const t = getToken();
-    if (t) api.get("/api/auth/me").then(r => setUser(r.data.user)).catch(()=>setUser(null));
+    if (t) {
+      api.get("/api/auth/me")
+        .then(r => setUser(r.data.user))
+        .catch(() => setUser(null));
+    }
   }, []);
 
   function handleSignout() {
@@ -51,23 +55,16 @@ export default function App() {
 }
 
 function Landing() {
-  const [loading, setLoading] = useState(false);
-  function signInAnon() {
-    setLoading(true);
-    api.post("/api/auth/anonymous").then(r => {
-      const { token, user } = r.data;
-      setToken(token);
-      window.location.href = "/";
-    }).finally(()=>setLoading(false));
-  }
   return (
     <div className="card">
       <h1 className="text-2xl font-semibold mb-2">Welcome to Friends Bills</h1>
-      <p className="mb-4">Split expenses with your friends. Create groups, add expenses, track balances, spin for chores, and ask the AI helper.</p>
+      <p className="mb-4">
+        Split expenses with your friends. Create groups, add expenses, track balances, 
+        spin for chores, and ask the AI helper.
+      </p>
       <div className="flex gap-3">
         <a className="button" href="/signin">Sign in</a>
         <a className="button" href="/signup">Sign up</a>
-        <button className="button" onClick={signInAnon} disabled={loading}>{loading ? "..." : "Continue as Guest"}</button>
       </div>
     </div>
   )
