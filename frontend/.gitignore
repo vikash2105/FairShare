@@ -1,19 +1,21 @@
-# Node modules (not needed for plain HTML/JS)
+# Dependencies
 node_modules/
-package-lock.json
-package.json
 
-# Build tools (not used anymore)
-vite.config.js
-postcss.config.cjs
-tailwind.config.js
+# Build output
+dist/
 
-# Env files (keep local only)
+# Build tool configs (keep if you don’t want to version them)
+# If you are still using Vite + Tailwind, do NOT ignore these
+#vite.config.js
+#postcss.config.cjs
+#tailwind.config.js
+
+# Environment variables (local only)
 .env
 .env.local
 .env.*.local
 
-# OS-specific junk
+# OS-specific files
 .DS_Store
 Thumbs.db
 
