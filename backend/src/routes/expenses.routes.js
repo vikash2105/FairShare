@@ -1,17 +1,13 @@
 import { Router } from "express";
-import {
-  addExpense,
-  getBalances,
-  listExpenses,
-} from "../controllers/expenses.controller.js";
+import { addExpense, listExpenses, getBalances } from "../controllers/expenses.controller.js";
 import { requireAuth } from "../middleware/auth.js";
 
-const r = Router();
+const router = Router();
 
-r.use(requireAuth);
+router.use(requireAuth);
 
-r.post("/", addExpense);
-r.get("/group/:id", listExpenses);
-r.get("/group/:id/balances", getBalances);
+router.post("/", addExpense);
+router.get("/group/:id", listExpenses);
+router.get("/group/:id/balances", getBalances);
 
-export default r;
+export default router;

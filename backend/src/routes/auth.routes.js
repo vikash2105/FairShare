@@ -1,10 +1,12 @@
 import { Router } from "express";
-import { anonymous, me, signin, signup } from "../controllers/auth.controller.js";
+import { signup, signin, anonymous, me } from "../controllers/auth.controller.js";
 import { requireAuth } from "../middleware/auth.js";
 
-const r = Router();
-r.post("/signup", signup);
-r.post("/signin", signin);
-r.post("/anonymous", anonymous);
-r.get("/me", requireAuth, me);
-export default r;
+const router = Router();
+
+router.post("/signup", signup);
+router.post("/signin", signin);
+router.post("/anonymous", anonymous);
+router.get("/me", requireAuth, me);
+
+export default router;

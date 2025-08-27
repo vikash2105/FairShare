@@ -1,28 +1,23 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY, // ✅ use environment variable
-});
+const client = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
-export async function chat(req, res) {
+export async function chat(req, res, next) {
   try {
-    const { message } = req.body;
-    if (!message) return res.status(400).json({ error: "message required" });
+    if (!client) return res.status(503).json({ error: "AI not enabled" });
 
-    const completion = await openai.chat.completions.create({
+    const { message } = req.body;
+    if (!message) return res.status(400).json({ error: "Message required" });
+
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: "You are a helpful assistant for splitting bills." },
-        { role: "user", content: message },
-      ],
+      messages: [{ role: "user", content: message }],
     });
 
-    const reply =
-      completion.choices?.[0]?.message?.content ||
-      "Sorry, I couldn't generate a response.";
-
-    res.json({ reply });
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+    res.json({ reply: completion.choices[0].message.content });
+  } catch (err) {
+    next(err);
   }
 }
