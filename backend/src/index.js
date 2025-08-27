@@ -15,7 +15,7 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ Allowed origins: localhost (dev) + Vercel (prod)
+// ✅ Allowed origins: dev + prod
 const allowedOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(",").map((s) => s.trim())
   : [
@@ -23,17 +23,13 @@ const allowedOrigins = process.env.CLIENT_ORIGIN
       "https://fairshare-lyart.vercel.app",
     ];
 
-// ✅ CORS middleware
+// ✅ Global CORS
 app.use(
   cors({
     origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, or server-to-server)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
+      if (!origin || allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-
       return callback(new Error("Not allowed by CORS"), false);
     },
     credentials: true,
@@ -41,19 +37,21 @@ app.use(
   })
 );
 
-// ✅ Handle preflight requests explicitly
+// ✅ Handle preflight everywhere
 app.options("*", cors());
 
 app.get("/", (_req, res) =>
   res.json({ ok: true, service: "friends-bills-backend" })
 );
 
+// ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/groups", groupsRoutes);
 app.use("/api/expenses", expensesRoutes);
 app.use("/api", spinsRoutes);
 app.use("/api/ai", aiRoutes);
 
+// ✅ Always return CORS headers even on errors
 app.use(errorHandler);
 
 const port = process.env.PORT || 8080;
