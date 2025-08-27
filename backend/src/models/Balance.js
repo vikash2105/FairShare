@@ -1,3 +1,4 @@
+import e from "express";
 import mongoose from "mongoose";
 
 const BalanceSchema = new mongoose.Schema({
@@ -7,4 +8,5 @@ const BalanceSchema = new mongoose.Schema({
 });
 BalanceSchema.index({ groupId: 1, userId: 1 }, { unique: true });
 
-export const Balance = mongoose.model("Balance", BalanceSchema);
+const Balance = mongoose.model("Balance", BalanceSchema);
+export default Balance;

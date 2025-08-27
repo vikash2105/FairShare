@@ -7,4 +7,5 @@ const SpinSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now, index: true }
 });
 
-export const Spin = mongoose.model("Spin", SpinSchema);
+const Spin = mongoose.model("Spin", SpinSchema);
+export default Spin;

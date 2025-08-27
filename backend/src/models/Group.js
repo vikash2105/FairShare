@@ -11,4 +11,5 @@ const GroupSchema = new mongoose.Schema({
 
 // ❌ removed duplicate index
 
-export const Group = mongoose.model("Group", GroupSchema);
+const Group = mongoose.model("Group", GroupSchema);
+export default Group;

@@ -9,5 +9,5 @@ const ExpenseSchema = new mongoose.Schema({
   date: { type: Date, default: Date.now, index: true },
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
 });
-
-export const Expense = mongoose.model("Expense", ExpenseSchema);
+const Expense = mongoose.model("Expense", ExpenseSchema);
+export default Expense;
