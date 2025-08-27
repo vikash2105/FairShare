@@ -1,9 +1,9 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL ||
-    "https://fairshare-nt1w.onrender.com", // deployed backend URL
+  // The deployed backend URL should be set via the VITE_API_BASE_URL environment variable.
+  // We're removing the hardcoded fallback to prevent connecting to an old or incorrect instance.
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 });
 
 // Set token in both localStorage + axios default headers

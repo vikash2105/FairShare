@@ -13,9 +13,9 @@ import aiRoutes from "./routes/ai.routes.js";
 dotenv.config();
 
 const app = express();
-app.use(express.json());
 
-// ✅ Allowed origins: dev + prod
+// ✅ Global CORS - Moved to be the first middleware to handle preflight requests correctly
+// Allowed origins: dev + prod
 const allowedOrigins = process.env.CLIENT_ORIGIN
   ? process.env.CLIENT_ORIGIN.split(",").map((s) => s.trim())
   : [
@@ -23,7 +23,6 @@ const allowedOrigins = process.env.CLIENT_ORIGIN
       "https://fairshare-lyart.vercel.app",
     ];
 
-// ✅ Global CORS
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -36,6 +35,10 @@ app.use(
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   })
 );
+
+// This middleware is now placed after CORS.
+// It parses incoming JSON requests and should be after any middleware that handles pre-request logic like CORS.
+app.use(express.json());
 
 // ✅ Handle preflight everywhere
 app.options("*", cors());
