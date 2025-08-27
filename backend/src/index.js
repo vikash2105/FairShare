@@ -15,22 +15,24 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-// ✅ Improved CORS setup
+// ✅ Allowed origins: localhost (dev) + vercel (prod)
 const allowedOrigins = process.env.CLIENT_ORIGIN
-  ? process.env.CLIENT_ORIGIN.split(",").map(s => s.trim())
-  : ["http://localhost:5173"];
+  ? process.env.CLIENT_ORIGIN.split(",").map((s) => s.trim())
+  : [
+      "http://localhost:5173",
+      "https://fairshare-lyart.vercel.app"
+    ];
 
 app.use(
   cors({
     origin: function (origin, callback) {
-      // allow requests with no origin (like curl/postman) or if origin is in allowed list
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
       }
     },
-    credentials: true, // ✅ allow cookies / auth headers
+    credentials: true,
   })
 );
 
@@ -41,7 +43,7 @@ app.get("/", (_req, res) =>
 app.use("/api/auth", authRoutes);
 app.use("/api/groups", groupsRoutes);
 app.use("/api/expenses", expensesRoutes);
-app.use("/api", spinsRoutes); // provides /api/group/:id/spin and /api/group/:id/spins
+app.use("/api", spinsRoutes);
 app.use("/api/ai", aiRoutes);
 
 app.use(errorHandler);
