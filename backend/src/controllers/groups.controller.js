@@ -41,5 +41,15 @@ export async function getGroup(req, res) {
   const group = await Group.findById(req.params.id).populate("members", "_id name email");
   if (!group) return res.status(404).json({ error: "Not found" });
   const memberDetails = group.members.map(m => ({ _id: m._id, name: m.name, email: m.email }));
+  res.json({
+    _id: group._id,
+    name: group.name,
+    description: group.description,
+    inviteCode: group.inviteCode,
+    members: group.members.map(m=>m._id),
+    memberDetails
+  });
+});
+  const memberDetails = group.members.map(m => ({ _id: m._id, name: m.name, email: m.email }));
   res.json({ _id: group._id, name: group.name, description: group.description, inviteCode: group.inviteCode, members: group.members.map(m=>m._id), memberDetails });
 }

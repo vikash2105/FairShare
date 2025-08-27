@@ -14,61 +14,43 @@ dotenv.config();
 
 const app = express();
 
-// ✅ Allowed origins: from env OR fallback
-const allowedOrigins = process.env.CLIENT_ORIGIN
-  ? process.env.CLIENT_ORIGIN.split(",").map((s) => s.trim())
-  : [
-      "http://localhost:5173",               // local dev
-      "http://localhost:3000",               // (in case of CRA/Next)
-      "https://fairshare-lyart.vercel.app",  // deployed frontend
-    ];
+// CORS with allowlist (supports comma-separated CLIENT_ORIGIN values)
+const allowedOrigins = (process.env.CLIENT_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map(s => s.trim())
+  .filter(Boolean);
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    console.log("CORS request from:", origin); // 🔍 debug
-
-    // allow REST tools (Postman/curl) with no origin
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
+app.use(cors({
+  origin(origin, cb) {
+    // allow non-browser clients or same-origin
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS: ${origin} not allowed`));
   },
   credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+  methods: ["GET","POST","PUT","PATCH","DELETE","OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+app.options("*", cors());
 
-// ✅ Apply CORS globally
-app.use(cors(corsOptions));
-
-// ✅ Explicitly handle preflight requests
-app.options("*", cors(corsOptions));
-
-// ✅ Parse incoming JSON
 app.use(express.json());
 
-// ✅ Health check route
-app.get("/", (_req, res) =>
-  res.json({ ok: true, service: "friends-bills-backend" })
-);
-
-// ✅ Routes
+// Mount routes (paths are coupled to the frontend)
 app.use("/api/auth", authRoutes);
 app.use("/api/groups", groupsRoutes);
 app.use("/api/expenses", expensesRoutes);
-app.use("/api", spinsRoutes);
+app.use("/api", spinsRoutes);      // /api/group/:id/spin(s)
 app.use("/api/ai", aiRoutes);
 
-// ✅ Error handler (always last)
+// Error handler last
 app.use(errorHandler);
 
 const port = process.env.PORT || 8080;
+
 connectDB(process.env.MONGODB_URI)
   .then(() => {
-    app.listen(port, () =>
-      console.log(`✅ Server listening on http://localhost:${port}`)
-    );
+    app.listen(port, () => {
+      console.log(`✅ Server listening on http://localhost:${port}`);
+    });
   })
   .catch((e) => {
     console.error("DB connection failed:", e);
