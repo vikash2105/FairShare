@@ -3,7 +3,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import sgMail from "@sendgrid/mail";
 
-sgMail.setApiKey(process.env.SENDGRID_API_KEY); // ✅ use SENDGRID_API_KEY not SMTP_PASS
+sgMail.setApiKey(process.env.SENDGRID_API_KEY); // ✅ use SENDGRID_API_KEY
 
 // helper to sign JWT
 function signToken(user) {
@@ -116,6 +116,26 @@ export async function signin(req, res, next) {
       user: { ...user.toObject(), password: undefined, otpHash: undefined },
       token,
     });
+  } catch (err) {
+    next(err);
+  }
+}
+
+// ------------------- RESEND OTP -------------------
+export async function resendOtp(req, res, next) {
+  try {
+    const { email } = req.body;
+    const user = await User.findOne({ email });
+    if (!user) return res.status(400).json({ error: "User not found" });
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    user.otpHash = await bcrypt.hash(otp, 10);
+    user.otpExpiry = Date.now() + 5 * 60 * 1000;
+
+    await user.save();
+    await sendOtpMail(email, otp);
+
+    res.json({ success: true, message: "New OTP sent to email" });
   } catch (err) {
     next(err);
   }
