@@ -8,10 +8,14 @@ export default function AddExpense({ group, onAdded, currentUser }) {
   const [splitAmong, setSplitAmong] = useState([]);
   const [error, setError] = useState("");
 
+  // Default paidBy = current user
   useEffect(() => {
-    if (currentUser?._id && !paidBy) setPaidBy(currentUser._id);
+    if (currentUser?._id && !paidBy) {
+      setPaidBy(currentUser._id);
+    }
   }, [currentUser, paidBy]);
 
+  // Default splitAmong = all group members
   useEffect(() => {
     if (Array.isArray(group?.memberDetails) && splitAmong.length === 0) {
       setSplitAmong(group.memberDetails.map((m) => m._id));
@@ -28,6 +32,8 @@ export default function AddExpense({ group, onAdded, currentUser }) {
     e.preventDefault();
     setError("");
     const amt = Number(amount);
+
+    // validations
     if (!description.trim()) return setError("Description required");
     if (!Number.isFinite(amt) || amt <= 0)
       return setError("Enter a valid amount");
@@ -42,13 +48,16 @@ export default function AddExpense({ group, onAdded, currentUser }) {
         paidBy,
         splitAmong,
       });
+
+      // reset form to defaults
       setDescription("");
       setAmount("");
       setPaidBy(currentUser?._id || "");
       setSplitAmong(group.memberDetails?.map((m) => m._id) || []);
+
       onAdded?.();
-    } catch (e) {
-      setError(e.response?.data?.error || e.message);
+    } catch (err) {
+      setError(err.response?.data?.error || err.message);
     }
   }
 
@@ -56,12 +65,15 @@ export default function AddExpense({ group, onAdded, currentUser }) {
     <div className="card">
       <h3 className="text-lg font-semibold mb-3">Add Expense</h3>
       <form onSubmit={submit} className="space-y-4">
+        {/* Description */}
         <input
           className="input"
           placeholder="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
         />
+
+        {/* Amount */}
         <input
           className="input"
           placeholder="Amount"
@@ -71,6 +83,8 @@ export default function AddExpense({ group, onAdded, currentUser }) {
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
         />
+
+        {/* Paid by */}
         <div>
           <label className="block text-sm mb-1 font-medium">Paid by</label>
           <select
@@ -86,6 +100,8 @@ export default function AddExpense({ group, onAdded, currentUser }) {
             ))}
           </select>
         </div>
+
+        {/* Split among */}
         <div>
           <label className="block text-sm mb-2 font-medium">Split among</label>
           <div className="flex flex-wrap gap-2">
@@ -109,8 +125,14 @@ export default function AddExpense({ group, onAdded, currentUser }) {
             ))}
           </div>
         </div>
+
+        {/* Error */}
         {error && <div className="text-red-600 text-sm">{error}</div>}
-        <button className="button w-full">Add</button>
+
+        {/* Submit */}
+        <button type="submit" className="button w-full">
+          Add
+        </button>
       </form>
     </div>
   );

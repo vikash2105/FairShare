@@ -7,7 +7,7 @@ import BalanceView from "./parts/BalanceView";
 import SpinWheel from "./parts/SpinWheel";
 import AIChat from "./parts/AIChat";
 
-export default function GroupDetails() {
+export default function GroupDetails({ currentUser }) {
   const { id } = useParams();
   const [group, setGroup] = useState(null);
   const [expenses, setExpenses] = useState([]);
@@ -15,26 +15,34 @@ export default function GroupDetails() {
   const [spins, setSpins] = useState([]);
   const [activeTab, setActiveTab] = useState("expenses");
   const [showAddExpense, setShowAddExpense] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   async function refresh() {
-    const g = await api.get(`/api/groups/${id}`);
-    setGroup(g.data);
+    try {
+      const g = await api.get(`/api/groups/${id}`);
+      setGroup(g.data);
 
-    const e = await api.get(`/api/expenses/group/${id}`);
-    setExpenses(e.data);
+      const e = await api.get(`/api/expenses/group/${id}`);
+      setExpenses(e.data);
 
-    const b = await api.get(`/api/expenses/group/${id}/balances`);
-    setBalances(b.data);
+      const b = await api.get(`/api/expenses/group/${id}/balances`);
+      setBalances(b.data);
 
-    const s = await api.get(`/api/group/${id}/spins`);
-    setSpins(s.data);
+      const s = await api.get(`/api/group/${id}/spins`);
+      setSpins(s.data);
+    } catch (err) {
+      console.error("Error loading group details:", err);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
     refresh();
   }, [id]);
 
-  if (!group) return <div className="card">Loading...</div>;
+  if (loading) return <div className="card">Loading...</div>;
+  if (!group) return <div className="card">Group not found.</div>;
 
   return (
     <div className="space-y-6">
@@ -119,6 +127,7 @@ export default function GroupDetails() {
         <div id="add-expense" className="card">
           <AddExpense
             group={group}
+            currentUser={currentUser}
             onAdded={() => {
               refresh();
               setShowAddExpense(false); // auto-close after adding
