@@ -18,7 +18,7 @@ export default function OtpVerify() {
       const r = await api.post("/api/auth/verify-otp", { email, otp });
 
       if (r.data.success) {
-        alert("Account verified successfully! Please sign in.");
+        alert("✅ Account verified successfully! Please sign in.");
         navigate("/signin");
       } else {
         setError("Invalid or expired OTP.");
@@ -34,7 +34,7 @@ export default function OtpVerify() {
     setError("");
     try {
       await api.post("/api/auth/resend-otp", { email });
-      alert("A new OTP has been sent to your email.");
+      alert("📩 A new OTP has been sent to your email.");
     } catch (e) {
       setError(e.response?.data?.error || "Failed to resend OTP.");
     }
@@ -46,16 +46,19 @@ export default function OtpVerify() {
         <div className="text-center mb-6">
           <h1 className="text-2xl font-bold text-gray-800">Verify Your Email</h1>
           <p className="text-gray-600 text-sm">
-            We’ve sent a 6-digit OTP to <span className="font-medium">{email}</span>.
+            We’ve sent a 6-digit OTP to{" "}
+            <span className="font-medium text-blue-600">{email}</span>.
           </p>
         </div>
 
         <form onSubmit={submit} className="space-y-4">
           <input
             className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-            placeholder="Enter OTP"
+            placeholder="Enter 6-digit OTP"
             value={otp}
             onChange={(e) => setOtp(e.target.value)}
+            maxLength={6}
+            required
           />
           {error && (
             <div className="text-red-600 text-sm bg-red-50 p-2 rounded-md">
@@ -65,7 +68,7 @@ export default function OtpVerify() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition transform hover:scale-[1.02]"
           >
             {loading ? "Verifying..." : "Verify OTP"}
           </button>
@@ -78,7 +81,7 @@ export default function OtpVerify() {
             onClick={resendOtp}
             className="text-blue-600 hover:underline font-medium"
           >
-            Resend
+            Resend OTP
           </button>
         </p>
       </div>
