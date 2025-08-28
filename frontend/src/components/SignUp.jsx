@@ -1,6 +1,6 @@
-import React, { useState } from "react"; 
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { api } from "../lib";  // no setToken here
+import { api } from "../lib";
 
 export default function SignUp() {
   const [name, setName] = useState("");
@@ -13,14 +13,12 @@ export default function SignUp() {
     e.preventDefault();
     setError("");
     try {
-      // call signup API
-      const r = await api.post("/api/auth/signup", { email, password, name });
+      const r = await api.post("/api/auth/signup", { name, email, password });
 
       if (r.data?.requiresVerification) {
-        // redirect to OTP verify page with email
+        // ✅ redirect to OTP page with email param
         navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
       } else {
-        // fallback (in case verification is off)
         navigate("/signin");
       }
     } catch (e) {
@@ -31,18 +29,17 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">
       <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-md animate-fade-in">
-        {/* Branding / Title */}
         <div className="text-center mb-6">
           <h1 className="text-3xl font-extrabold text-gray-800 mb-2">
             Create Your Account ✨
           </h1>
           <p className="text-gray-600 text-sm">
-            Join <span className="font-semibold text-blue-600">FairShareAI</span>  
-              and split smarter with friends
+            Join{" "}
+            <span className="font-semibold text-blue-600">FairShareAI</span> and
+            split smarter with friends
           </p>
         </div>
 
-        {/* Form */}
         <form onSubmit={submit} className="space-y-4">
           <input
             className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
@@ -76,7 +73,6 @@ export default function SignUp() {
           </button>
         </form>
 
-        {/* Footer link */}
         <p className="text-center text-sm text-gray-600 mt-6">
           Already have an account?{" "}
           <Link

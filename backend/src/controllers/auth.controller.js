@@ -3,9 +3,9 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 import sgMail from "@sendgrid/mail";
 
-sgMail.setApiKey(process.env.SMTP_PASS); // ✅ SendGrid API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY); // ✅ use SENDGRID_API_KEY not SMTP_PASS
 
-// ✅ helper to sign a JWT
+// helper to sign JWT
 function signToken(user) {
   return jwt.sign(
     {
@@ -18,7 +18,7 @@ function signToken(user) {
   );
 }
 
-// ✅ helper to send OTP email using SendGrid
+// helper to send OTP
 async function sendOtpMail(email, otp) {
   await sgMail.send({
     to: email,
@@ -51,43 +51,15 @@ export async function signup(req, res, next) {
 
     // generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpHash = await bcrypt.hash(otp, 10);
-    user.otpHash = otpHash;
+    user.otpHash = await bcrypt.hash(otp, 10);
     user.otpExpiry = Date.now() + 5 * 60 * 1000;
 
     await user.save();
     await sendOtpMail(email, otp);
 
-    const token = signToken(user);
     res.status(201).json({
-      user: { ...user.toObject(), password: undefined, otpHash: undefined },
-      token,
+      message: "OTP sent to email",
       requiresVerification: true,
-    });
-  } catch (err) {
-    next(err);
-  }
-}
-
-// ------------------- SIGNIN -------------------
-export async function signin(req, res, next) {
-  try {
-    const { email, password } = req.body;
-    const user = await User.findOne({ email });
-    if (!user || !user.password) {
-      return res.status(400).json({ error: "Invalid credentials" });
-    }
-
-    const ok = await bcrypt.compare(password, user.password);
-    if (!ok) {
-      return res.status(400).json({ error: "Invalid credentials" });
-    }
-
-    const token = signToken(user);
-    res.json({
-      user: { ...user.toObject(), password: undefined, otpHash: undefined },
-      token,
-      requiresVerification: !user.isVerified,
     });
   } catch (err) {
     next(err);
@@ -115,40 +87,35 @@ export async function verifyOtp(req, res, next) {
     user.otpExpiry = undefined;
     await user.save();
 
-    res.json({ success: true });
+    res.json({ success: true, message: "Account verified successfully" });
   } catch (err) {
     next(err);
   }
 }
 
-// ------------------- RESEND OTP -------------------
-export async function resendOtp(req, res, next) {
+// ------------------- SIGNIN -------------------
+export async function signin(req, res, next) {
   try {
-    const { email } = req.body;
+    const { email, password } = req.body;
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: "User not found" });
+    if (!user || !user.password) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
 
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    user.otpHash = await bcrypt.hash(otp, 10);
-    user.otpExpiry = Date.now() + 5 * 60 * 1000;
-    await user.save();
+    if (!user.isVerified) {
+      return res.status(403).json({ error: "Account not verified" });
+    }
 
-    await sendOtpMail(email, otp);
+    const ok = await bcrypt.compare(password, user.password);
+    if (!ok) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
 
-    res.json({ success: true });
-  } catch (err) {
-    next(err);
-  }
-}
-
-// ------------------- ME -------------------
-export async function me(req, res, next) {
-  try {
-    const user = await User.findById(req.user.id)
-      .select("-password -otpHash")
-      .lean();
-    if (!user) return res.status(404).json({ error: "User not found" });
-    res.json({ user });
+    const token = signToken(user);
+    res.json({
+      user: { ...user.toObject(), password: undefined, otpHash: undefined },
+      token,
+    });
   } catch (err) {
     next(err);
   }
