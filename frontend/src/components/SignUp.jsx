@@ -1,8 +1,8 @@
-import React, { useState } from "react";
+import React, { useState } from "react"; 
 import { useNavigate, Link } from "react-router-dom";
-import { api, setToken } from "../lib";
+import { api } from "../lib";  // no setToken here
 
-export default function SignUp({ onAuth }) {
+export default function SignUp() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,10 +13,16 @@ export default function SignUp({ onAuth }) {
     e.preventDefault();
     setError("");
     try {
+      // call signup API
       const r = await api.post("/api/auth/signup", { email, password, name });
-      onAuth(r.data.token, r.data.user);
-      setToken(r.data.token);
-      navigate("/");
+
+      if (r.data?.requiresVerification) {
+        // redirect to OTP verify page with email
+        navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+      } else {
+        // fallback (in case verification is off)
+        navigate("/signin");
+      }
     } catch (e) {
       setError(e.response?.data?.error || e.message);
     }

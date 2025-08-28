@@ -1,7 +1,9 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import nodemailer from "nodemailer";
 import User from "../models/User.js";
+import sgMail from "@sendgrid/mail";
+
+sgMail.setApiKey(process.env.SMTP_PASS); // ✅ SendGrid API key
 
 // ✅ helper to sign a JWT
 function signToken(user) {
@@ -16,20 +18,11 @@ function signToken(user) {
   );
 }
 
-// ✅ helper to send OTP email (using SendGrid SMTP settings in .env)
+// ✅ helper to send OTP email using SendGrid
 async function sendOtpMail(email, otp) {
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST, // smtp.sendgrid.net
-    port: process.env.SMTP_PORT || 587,
-    auth: {
-      user: process.env.SMTP_USER, // usually "apikey"
-      pass: process.env.SMTP_PASS, // your SendGrid API key
-    },
-  });
-
-  await transporter.sendMail({
-    from: process.env.SMTP_FROM || "no-reply@fairshare.com",
+  await sgMail.send({
     to: email,
+    from: process.env.SMTP_FROM, // must be verified sender in SendGrid
     subject: "Your OTP Code",
     text: `Your OTP is ${otp}. It expires in 5 minutes.`,
   });
@@ -65,9 +58,11 @@ export async function signup(req, res, next) {
     await user.save();
     await sendOtpMail(email, otp);
 
+    const token = signToken(user);
     res.status(201).json({
+      user: { ...user.toObject(), password: undefined, otpHash: undefined },
+      token,
       requiresVerification: true,
-      message: "OTP sent to your email",
     });
   } catch (err) {
     next(err);
@@ -83,12 +78,6 @@ export async function signin(req, res, next) {
       return res.status(400).json({ error: "Invalid credentials" });
     }
 
-    if (!user.isVerified) {
-      return res
-        .status(403)
-        .json({ error: "Account not verified. Please verify OTP first." });
-    }
-
     const ok = await bcrypt.compare(password, user.password);
     if (!ok) {
       return res.status(400).json({ error: "Invalid credentials" });
@@ -98,6 +87,7 @@ export async function signin(req, res, next) {
     res.json({
       user: { ...user.toObject(), password: undefined, otpHash: undefined },
       token,
+      requiresVerification: !user.isVerified,
     });
   } catch (err) {
     next(err);
@@ -125,7 +115,7 @@ export async function verifyOtp(req, res, next) {
     user.otpExpiry = undefined;
     await user.save();
 
-    res.json({ success: true, message: "Account verified. Please sign in." });
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }
@@ -145,7 +135,7 @@ export async function resendOtp(req, res, next) {
 
     await sendOtpMail(email, otp);
 
-    res.json({ success: true, message: "New OTP sent" });
+    res.json({ success: true });
   } catch (err) {
     next(err);
   }

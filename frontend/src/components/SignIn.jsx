@@ -13,9 +13,17 @@ export default function SignIn({ onAuth }) {
     setError("");
     try {
       const r = await api.post("/api/auth/signin", { email, password });
+
+      // Save token + auth
       onAuth(r.data.token, r.data.user);
       setToken(r.data.token);
-      navigate("/");
+
+      // If backend tells us the user needs verification → redirect to OTP
+      if (r.data?.requiresVerification) {
+        navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+      } else {
+        navigate("/");
+      }
     } catch (e) {
       setError(e.response?.data?.error || e.message);
     }
@@ -30,7 +38,8 @@ export default function SignIn({ onAuth }) {
             Welcome Back 👋
           </h1>
           <p className="text-gray-600 text-sm">
-            Sign in to <span className="font-semibold text-blue-600">FairShareAI</span>  
+            Sign in to{" "}
+            <span className="font-semibold text-blue-600">FairShareAI</span>
             & split smarter with friends
           </p>
         </div>

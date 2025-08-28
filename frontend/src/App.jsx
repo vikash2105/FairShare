@@ -5,6 +5,7 @@ import SignIn from "./components/SignIn";
 import SignUp from "./components/SignUp";
 import Dashboard from "./components/Dashboard";
 import GroupDetails from "./components/GroupDetails";
+import OtpVerify from "./components/OtpVerify";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -75,6 +76,7 @@ export default function App() {
               }} />
             }
           />
+          <Route path="/verify-otp" element={<OtpVerify />} />
           <Route path="/groups/:id" element={<GroupDetails user={user} />} />
         </Routes>
       </main>
