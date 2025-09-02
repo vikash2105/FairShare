@@ -19,16 +19,17 @@ export default function GroupDetails({ currentUser }) {
 
   async function refresh() {
     try {
-      const g = await api.get(`/groups/${id}`);
+      // ✅ all routes now include `/api`
+      const g = await api.get(`/api/groups/${id}`);
       setGroup(g.data);
 
-      const e = await api.get(`/expenses/${id}`);      // unified
+      const e = await api.get(`/api/expenses/${id}`);
       setExpenses(e.data);
 
-      const b = await api.get(`/balances/${id}`);      // unified
+      const b = await api.get(`/api/balances/${id}`);
       setBalances(b.data.balances || []);
 
-      const s = await api.get(`/spins/${id}`);         // unified
+      const s = await api.get(`/api/spins/${id}`);
       setSpins(s.data);
     } catch (err) {
       console.error("Error loading group details:", err?.response?.data || err);
@@ -115,11 +116,7 @@ export default function GroupDetails({ currentUser }) {
           {activeTab === "balances" && <BalanceView balances={balances} />}
 
           {activeTab === "spin" && (
-            <SpinWheel
-              groupId={id}
-              spins={spins}
-              onSpin={refresh}
-            />
+            <SpinWheel groupId={id} spins={spins} onSpin={refresh} />
           )}
 
           {activeTab === "ai" && <AIChat groupId={id} />}
