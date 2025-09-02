@@ -1,18 +1,15 @@
 import { Router } from "express";
-import { listSpins, spin, spinRandom } from "../controllers/spins.controller.js";
+import { listSpins, spinRandom } from "../controllers/spins.controller.js";
 import { requireAuth } from "../middleware/auth.js";
 
 const router = Router();
 
 router.use(requireAuth);
 
-// Get all spins for a group
-router.get("/group/:id/spins", listSpins);
+// GET /spins/:groupId  => list recent spins for group
+router.get("/:groupId", listSpins);
 
-// Record a spin result provided by frontend
-router.post("/group/:id/spin", spin);
-
-// Perform a random spin on backend
-router.post("/group/:id/spin/random", spinRandom);
+// POST /spins/:groupId/random => do a random spin and save
+router.post("/:groupId/random", spinRandom);
 
 export default router;

@@ -4,12 +4,10 @@ import { api } from "../../lib";
 export default function ExpenseList({ groupId, expenses = [], onRefresh }) {
   const [localExpenses, setLocalExpenses] = useState(expenses);
 
-  // Keep local state in sync when parent updates
   useEffect(() => {
     setLocalExpenses(expenses);
   }, [expenses]);
 
-  // Optional direct fetch (in case you want auto-refresh on mount)
   const fetchExpenses = async () => {
     try {
       const res = await api.get(`/expenses/${groupId}`);
@@ -60,7 +58,6 @@ export default function ExpenseList({ groupId, expenses = [], onRefresh }) {
         <p className="text-gray-500">No expenses yet.</p>
       )}
 
-      {/* Refresh Button (handy after adding expense) */}
       <button
         className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
         onClick={onRefresh || fetchExpenses}

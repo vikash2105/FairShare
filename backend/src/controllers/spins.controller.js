@@ -1,60 +1,56 @@
 import Spin from "../models/Spin.js";
 import Group from "../models/Group.js";
 
-// List all spins for a group
+// GET /spins/:groupId
 export async function listSpins(req, res, next) {
   try {
-    const { id } = req.params; // groupId
-    const spins = await Spin.find({ groupId: id })
-      .sort({ createdAt: -1 })
+    const { groupId } = req.params;
+    const spins = await Spin.find({ groupId })
+      .sort({ date: -1 })
+      .populate("selectedMember", "name email")
+      .populate("spinBy", "name email")
       .lean();
-    res.json(spins);
+
+    // normalize for frontend
+    const data = spins.map((s) => ({
+      _id: s._id,
+      date: s.date,
+      result: s.selectedMember?.name || "Unknown",
+      spinBy: s.spinBy ? { name: s.spinBy.name, email: s.spinBy.email } : null,
+    }));
+
+    res.json(data);
   } catch (err) {
     next(err);
   }
 }
 
-// Record a spin result provided by frontend
-export async function spin(req, res, next) {
-  try {
-    const { id } = req.params; // groupId
-    const { result } = req.body;
-    if (!result) return res.status(400).json({ error: "Result required" });
-
-    const spin = await Spin.create({
-      groupId: id,
-      result,
-      createdBy: req.user.id,
-    });
-
-    res.status(201).json(spin);
-  } catch (err) {
-    next(err);
-  }
-}
-
-// Randomize spin result on backend
+// POST /spins/:groupId/random
 export async function spinRandom(req, res, next) {
   try {
-    const { id } = req.params; // groupId
-    const group = await Group.findById(id).populate("members", "name email");
+    const { groupId } = req.params;
+
+    const group = await Group.findById(groupId).populate("members", "name email");
     if (!group) return res.status(404).json({ error: "Group not found" });
 
-    const members = group.members;
-    if (!members || members.length === 0) {
-      return res.status(400).json({ error: "No members in group" });
-    }
+    const members = group.members || [];
+    if (!members.length) return res.status(400).json({ error: "No members to spin" });
 
-    // Pick a random member
-    const randomMember = members[Math.floor(Math.random() * members.length)];
+    const selectedMember = members[Math.floor(Math.random() * members.length)];
 
     const spin = await Spin.create({
-      groupId: id,
-      result: randomMember.name,
-      createdBy: req.user.id,
+      groupId,
+      selectedMember: selectedMember._id,
+      spinBy: req.user.id,
+      date: new Date(),
     });
 
-    res.status(201).json(spin);
+    res.status(201).json({
+      _id: spin._id,
+      date: spin.date,
+      result: selectedMember.name,
+      spinBy: null, // you can refetch to populate if needed
+    });
   } catch (err) {
     next(err);
   }

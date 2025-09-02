@@ -9,8 +9,8 @@ export default function SpinWheel({ groupId, onSpin, spins = [] }) {
     setLoading(true);
     try {
       const r = await api.post(`/spins/${groupId}/random`);
-      setSelected(r.data.result); // backend now returns { result: "Member Name" }
-      onSpin?.(); // trigger parent refresh (to reload spins list)
+      setSelected(r.data.result);
+      onSpin?.();
     } catch (err) {
       console.error("Spin failed:", err);
     } finally {
@@ -21,12 +21,8 @@ export default function SpinWheel({ groupId, onSpin, spins = [] }) {
   return (
     <div className="card">
       <h3 className="text-lg font-semibold mb-3">Spin Wheel</h3>
-      
-      <button
-        className="button w-full"
-        onClick={doSpin}
-        disabled={loading}
-      >
+
+      <button className="button w-full" onClick={doSpin} disabled={loading}>
         {loading ? "Spinning..." : "Spin"}
       </button>
 
@@ -42,8 +38,8 @@ export default function SpinWheel({ groupId, onSpin, spins = [] }) {
           {spins.length > 0 ? (
             spins.map((s) => (
               <li key={s._id} className="text-gray-600">
-                {new Date(s.date).toLocaleString()} —{" "}
-                <b>{s.result}</b> (by {s.spinBy?.name || "Unknown"})
+                {new Date(s.date).toLocaleString()} — <b>{s.result}</b>
+                {s.spinBy?.name ? ` (by ${s.spinBy.name})` : ""}
               </li>
             ))
           ) : (

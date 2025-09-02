@@ -16,12 +16,10 @@ export default function AIChat({ groupId }) {
     setLoading(true);
 
     try {
-      // ✅ send groupId in URL instead of body
       const r = await api.post(`/ai/chat/${groupId}`, { message: text });
 
-      // normalize response: could be { reply }, or array/object
       let reply = "";
-      if (r.data.reply) {
+      if (r.data?.reply) {
         reply = r.data.reply;
       } else if (Array.isArray(r.data)) {
         reply = JSON.stringify(r.data, null, 2);
@@ -47,7 +45,6 @@ export default function AIChat({ groupId }) {
     <div className="card">
       <h3 className="text-lg font-semibold mb-3">AI Assistant</h3>
 
-      {/* Chat history */}
       <div className="space-y-2 mb-3 max-h-64 overflow-auto border rounded-lg p-3 bg-gray-50">
         {items.map((m, i) => (
           <div
@@ -67,16 +64,13 @@ export default function AIChat({ groupId }) {
             </span>
           </div>
         ))}
-        {loading && (
-          <div className="text-sm text-gray-500 italic">Thinking...</div>
-        )}
+        {loading && <div className="text-sm text-gray-500 italic">Thinking...</div>}
       </div>
 
-      {/* Input form */}
       <form onSubmit={submit} className="flex gap-2">
         <input
           className="input flex-1"
-          placeholder='Ask things like: "I paid 10 rupees on chai with Ayush"'
+          placeholder='Try: "I paid 10 rupees on chai with Ayush and Shicnash"'
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
