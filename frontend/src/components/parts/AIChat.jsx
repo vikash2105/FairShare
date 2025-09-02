@@ -16,9 +16,10 @@ export default function AIChat({ groupId }) {
     setLoading(true);
 
     try {
-      const r = await api.post(`/ai/chat`, { message: text, groupId });
+      // ✅ send groupId in URL instead of body
+      const r = await api.post(`/ai/chat/${groupId}`, { message: text });
 
-      // normalize response: some cases return reply string, some return arrays
+      // normalize response: could be { reply }, or array/object
       let reply = "";
       if (r.data.reply) {
         reply = r.data.reply;
@@ -33,7 +34,10 @@ export default function AIChat({ groupId }) {
       setItems((prev) => [...prev, { type: "ai", content: reply }]);
     } catch (err) {
       console.error("AI chat error:", err);
-      setItems((prev) => [...prev, { type: "ai", content: "❌ Error: AI request failed" }]);
+      setItems((prev) => [
+        ...prev,
+        { type: "ai", content: "❌ Error: AI request failed" },
+      ]);
     } finally {
       setLoading(false);
     }
