@@ -1,136 +1,92 @@
 import Expense from "../models/Expense.js";
 import Group from "../models/Group.js";
-import User from "../models/User.js";
-import Balance from "../models/Balance.js";
+import Settlement from "../models/Settlement.js";
 
-function round2(n) {
-  return Math.round((n + Number.EPSILON) * 100) / 100;
+function computeSplits({ amount, splitMethod, participants, payload }) {
+  const n = participants.length;
+  if (n <= 0) throw new Error("No participants provided");
+
+  if (splitMethod === "equal") {
+    const share = Number((amount / n).toFixed(2));
+    const splits = participants.map((u) => ({ user: u, share }));
+    const sum = splits.reduce((a, s) => a + s.share, 0);
+    const diff = Number((amount - sum).toFixed(2));
+    if (diff !== 0) splits[splits.length - 1].share = Number((splits[splits.length - 1].share + diff).toFixed(2));
+    return splits;
+  }
+
+  if (splitMethod === "exact") {
+    const exacts = payload?.exacts || [];
+    const map = new Map(exacts.map((e) => [String(e.user), Number(e.amount)]));
+    const splits = participants.map((u) => ({ user: u, share: Number(map.get(String(u)) || 0), exact: Number(map.get(String(u)) || 0) }));
+    const sum = splits.reduce((a, s) => a + s.share, 0);
+    if (Number(sum.toFixed(2)) !== Number(amount.toFixed(2))) throw new Error("Exact splits must sum to total amount");
+    return splits;
+  }
+
+  if (splitMethod === "percent") {
+    const percents = payload?.percents || [];
+    const map = new Map(percents.map((p) => [String(p.user), Number(p.percent)]));
+    const splits = participants.map((u) => {
+      const pct = Number(map.get(String(u)) || 0);
+      const share = Number(((pct / 100) * amount).toFixed(2));
+      return { user: u, share, percent: pct };
+    });
+    const sum = splits.reduce((a, s) => a + s.share, 0);
+    const diff = Number((amount - sum).toFixed(2));
+    if (Math.abs(diff) > 0.02) throw new Error("Percent splits must add up to ~100%");
+    if (diff !== 0) splits[splits.length - 1].share = Number((splits[splits.length - 1].share + diff).toFixed(2));
+    return splits;
+  }
+
+  throw new Error("Unsupported split method");
 }
 
-export async function addExpense(req, res, next) {
+export async function addExpense(req,res,next){
   try {
-    const { groupId, description, amount, paidBy, splitAmong } = req.body;
-    const amt = Number(amount);
-
-    if (
-      !groupId ||
-      !description ||
-      !Number.isFinite(amt) ||
-      amt <= 0 ||
-      !paidBy ||
-      !Array.isArray(splitAmong) ||
-      splitAmong.length === 0
-    ) {
-      return res.status(400).json({ error: "Missing or invalid fields" });
-    }
-
-    const group = await Group.findById(groupId);
+    const { groupId, description, amount, paidBy, participants, splitMethod="equal", category="general", payload } = req.body;
+    const group = await Group.findById(groupId).lean();
     if (!group) return res.status(404).json({ error: "Group not found" });
 
-    const isMember = group.members.map(String).includes(String(req.user.id));
-    if (!isMember) return res.status(403).json({ error: "Not a group member" });
+    const part = (participants && participants.length) ? participants : group.members;
+    const splits = computeSplits({ amount: Number(amount), splitMethod, participants: part, payload });
 
-    // Create the expense
-    const expense = await Expense.create({
-      groupId,
-      description: String(description).trim(),
-      amount: amt,
-      paidBy,
-      splitAmong,
-      createdBy: req.user.id,
-    });
-
-    // Equal split across selected members
-    const share = round2(amt / splitAmong.length);
-
-    // Update balances: payer gets +amount, each selected member gets -share
-    await Promise.all([
-      Balance.updateOne(
-        { groupId, userId: paidBy },
-        { $inc: { balance: amt } },
-        { upsert: true }
-      ),
-      ...splitAmong.map((uid) =>
-        Balance.updateOne(
-          { groupId, userId: uid },
-          { $inc: { balance: -share } },
-          { upsert: true }
-        )
-      ),
-    ]);
-
-    res.status(201).json({ ok: true, expenseId: expense._id });
-  } catch (err) {
-    next(err);
-  }
+    const expense = await Expense.create({ groupId, description, amount, category, paidBy, participants: part, splitMethod, splits });
+    const populated = await Expense.findById(expense._id).populate("paidBy", "name").populate("participants", "name");
+    res.status(201).json(populated);
+  } catch(e){ next(e); }
 }
 
-export async function getGroupExpenses(req, res, next) {
+export async function listGroupExpenses(req,res,next){
   try {
-    const { id } = req.params; // groupId
-    const expenses = await Expense.find({ groupId: id })
-      .sort({ date: -1 })
-      .lean();
-
-    const userIds = Array.from(
-      new Set(expenses.flatMap((e) => [e.paidBy, ...e.splitAmong]))
-    );
-
-    const users = await User.find({ _id: { $in: userIds } })
-      .select("_id name email")
-      .lean();
-
-    const uMap = new Map(users.map((u) => [String(u._id), u]));
-
-    res.json(
-      expenses.map((e) => ({
-        ...e,
-        paidByName: uMap.get(String(e.paidBy))?.name || "User",
-      }))
-    );
-  } catch (err) {
-    next(err);
-  }
+    const exps = await Expense.find({ groupId: req.params.groupId }).populate("paidBy","name").sort({ createdAt: -1 });
+    res.json(exps);
+  } catch(e){ next(e); }
 }
 
-export async function getBalances(req, res, next) {
+export async function getBalances(req,res,next){
   try {
-    const { id } = req.params; // groupId
-    const balances = await Balance.find({ groupId: id }).lean();
+    const groupId = req.params.groupId || req.body.groupId;
+    const expenses = await Expense.find({ groupId }).lean();
+    const settlements = await Settlement.find({ groupId }).lean();
 
-    const users = await User.find({
-      _id: { $in: balances.map((b) => b.userId) },
-    })
-      .select("_id name email")
-      .lean();
+    const bal = {}; // userId -> balance
+    const add = (u, v)=>{ bal[u]=Number((bal[u]||0)+v); };
 
-    const map = new Map(users.map((u) => [String(u._id), u]));
+    for (const ex of expenses) {
+      add(String(ex.paidBy), ex.amount); // payer paid
+      for (const s of ex.splits) {
+        add(String(s.user), -s.share);   // owed by participant
+      }
+    }
+    // apply settlements: from pays to
+    for (const st of settlements) {
+      add(String(st.from), -st.amount);
+      add(String(st.to), st.amount);
+    }
 
-    const out = balances.map((b) => ({
-      userId: b.userId,
-      userName: map.get(String(b.userId))?.name || "User",
-      userEmail: map.get(String(b.userId))?.email || "",
-      balance: round2(b.balance),
-    }));
-
-    res.json(out);
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function listExpenses(req, res, next) {
-  try {
-    const { groupId } = req.params;
-
-    const expenses = await Expense.find({ groupId })
-      .populate("paidBy", "name email")
-      .populate("splitAmong", "name email")
-      .sort({ createdAt: -1 })
-      .lean();
-
-    res.json(expenses);
-  } catch (err) {
-    next(err);
-  }
+    // pretty
+    const result = Object.entries(bal).map(([user, balance]) => ({ user, balance: Number(balance.toFixed(2)) }));
+    res.json({ balances: result });
+  } catch(e){ next(e); }
 }

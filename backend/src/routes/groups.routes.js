@@ -1,14 +1,9 @@
 import { Router } from "express";
-import { createGroup, getGroup, joinGroup, myGroups } from "../controllers/groups.controller.js";
-import { requireAuth } from "../middleware/auth.js";
-
+import { auth } from "../middleware/auth.js";
+import { createGroup, myGroups, getGroup, joinGroup } from "../controllers/groups.controller.js";
 const router = Router();
-
-router.use(requireAuth);
-
-router.post("/", createGroup);
-router.post("/join", joinGroup);
-router.get("/mine", myGroups);
-router.get("/:id", getGroup);
-
+router.post("/", auth, createGroup);
+router.get("/mine", auth, myGroups);
+router.get("/:id", auth, getGroup);
+router.post("/join", auth, joinGroup);
 export default router;

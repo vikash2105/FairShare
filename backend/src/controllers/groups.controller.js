@@ -1,67 +1,47 @@
 import Group from "../models/Group.js";
 import User from "../models/User.js";
+import crypto from "crypto";
 
-export async function createGroup(req, res, next) {
+export async function createGroup(req,res,next){
   try {
     const { name, description } = req.body;
-    if (!name) return res.status(400).json({ error: "Group name required" });
-
-    const group = await Group.create({
-      name: String(name).trim(),
-      description: description || "",
-      members: [req.user.id],
-      inviteCode: Math.random().toString(36).substring(2, 8),
-    });
-
-    res.status(201).json(group);
-  } catch (err) {
-    next(err);
-  }
+    const inviteCode = crypto.randomBytes(3).toString("hex").toUpperCase();
+    const group = await Group.create({ name, description, inviteCode, owner: req.user.id, members: [req.user.id] });
+    const populated = await group.populate("members", "name email");
+    res.status(201).json(populated);
+  } catch(e){ next(e); }
 }
 
-export async function joinGroup(req, res, next) {
+export async function myGroups(req,res,next){
+  try {
+    const groups = await Group.find({ members: req.user.id }).populate("members", "name email");
+    res.json(groups);
+  } catch(e){ next(e); }
+}
+
+export async function getGroup(req,res,next){
+  try {
+    const g = await Group.findById(req.params.id).populate("members", "name email");
+    if (!g) return res.status(404).json({ error: "Group not found" });
+    res.json({
+      _id: g._id,
+      name: g.name,
+      description: g.description,
+      inviteCode: g.inviteCode,
+      memberDetails: g.members.map(m=>({ _id: m._id, name: m.name, email: m.email }))
+    });
+  } catch(e){ next(e); }
+}
+
+export async function joinGroup(req,res,next){
   try {
     const { inviteCode } = req.body;
-    const group = await Group.findOne({ inviteCode });
-    if (!group) return res.status(404).json({ error: "Group not found" });
-
-    if (!group.members.map(String).includes(String(req.user.id))) {
-      group.members.push(req.user.id);
-      await group.save();
-    }
-
-    res.json(group);
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function myGroups(req, res, next) {
-  try {
-    const groups = await Group.find({ members: req.user.id }).lean();
-    res.json(groups);
-  } catch (err) {
-    next(err);
-  }
-}
-
-export async function getGroup(req, res, next) {
-  try {
-    const group = await Group.findById(req.params.id)
-      .populate("members", "name email")
-      .lean();
-
-    if (!group) return res.status(404).json({ error: "Group not found" });
-
-    res.json({
-      _id: group._id,
-      name: group.name,
-      description: group.description,
-      inviteCode: group.inviteCode,
-      members: group.members.map((m) => m._id),
-      memberDetails: group.members,
-    });
-  } catch (err) {
-    next(err);
-  }
+    const g = await Group.findOne({ inviteCode });
+    if (!g) return res.status(404).json({ error: "Invalid invite code" });
+    if (!g.members.find(m=> String(m)===req.user.id))
+      g.members.push(req.user.id);
+    await g.save();
+    const populated = await Group.findById(g._id).populate("members", "name email");
+    res.json(populated);
+  } catch(e){ next(e); }
 }
