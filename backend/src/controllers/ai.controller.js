@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { addExpense } from "./expenses.controller.js";
-import { getBalances } from "./expenses.controller.js";
+import { addExpense } from "./balances.controller.js";
+import { getBalances } from "./balances.controller.js";
 import Expense from "../models/Expense.js";
 import Group from "../models/Group.js";
 import { addSettlement } from "./settlements.controller.js";

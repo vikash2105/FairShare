@@ -1,9 +1,9 @@
 import express from "express";
 import { getBalances } from "../controllers/balances.controller.js";
-import { requireAuth } from "../middleware/auth.js";
+import { auth } from "../middleware/auth.js";
 
 const router = express.Router();
 
-router.get("/:groupId", requireAuth, getBalances);
+router.get("/:groupId", auth, getBalances);
 
 export default router;

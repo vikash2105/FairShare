@@ -1,10 +1,10 @@
 import { Router } from "express";
 import { listSpins, spinRandom } from "../controllers/spins.controller.js";
-import { requireAuth } from "../middleware/auth.js";
+import { auth } from "../middleware/auth.js";
 
 const router = Router();
 
-router.use(requireAuth);
+router.use(auth);
 
 // GET /spins/:groupId  => list recent spins for group
 router.get("/:groupId", listSpins);
