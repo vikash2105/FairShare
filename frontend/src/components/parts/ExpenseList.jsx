@@ -1,13 +1,37 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { api } from "../../lib";
 
-export default function ExpenseList({ expenses = [], showAddExpense, setShowAddExpense }) {
+export default function ExpenseList({ groupId, expenses = [], onRefresh }) {
+  const [localExpenses, setLocalExpenses] = useState(expenses);
+
+  // Keep local state in sync when parent updates
+  useEffect(() => {
+    setLocalExpenses(expenses);
+  }, [expenses]);
+
+  // Optional direct fetch (in case you want auto-refresh on mount)
+  const fetchExpenses = async () => {
+    try {
+      const res = await api.get(`/expenses/${groupId}`);
+      setLocalExpenses(res.data);
+    } catch (err) {
+      console.error("Failed to fetch expenses", err);
+    }
+  };
+
+  useEffect(() => {
+    if (!expenses.length && groupId) {
+      fetchExpenses();
+    }
+  }, [groupId]);
+
   return (
     <div>
       <h2 className="text-xl font-bold mb-4">Expenses</h2>
 
-      {expenses && expenses.length > 0 ? (
+      {localExpenses && localExpenses.length > 0 ? (
         <ul className="space-y-2">
-          {expenses.map((exp) => {
+          {localExpenses.map((exp) => {
             const payerName =
               typeof exp.paidBy === "object" && exp.paidBy !== null
                 ? exp.paidBy.name || exp.paidBy.username || exp.paidBy.email
@@ -26,7 +50,7 @@ export default function ExpenseList({ expenses = [], showAddExpense, setShowAddE
                   </p>
                 </div>
                 <span className="font-bold text-green-600">
-                  ${Number(exp.amount).toFixed(2)}
+                  ₹{Number(exp.amount).toFixed(2)}
                 </span>
               </li>
             );
@@ -36,15 +60,13 @@ export default function ExpenseList({ expenses = [], showAddExpense, setShowAddE
         <p className="text-gray-500">No expenses yet.</p>
       )}
 
-      {/* Optional add expense toggle (if you want the button inside the list) */}
-      {!showAddExpense && (
-        <button
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
-          onClick={() => setShowAddExpense(true)}
-        >
-          + Add Expense
-        </button>
-      )}
+      {/* Refresh Button (handy after adding expense) */}
+      <button
+        className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg shadow hover:bg-indigo-700"
+        onClick={onRefresh || fetchExpenses}
+      >
+        🔄 Refresh Expenses
+      </button>
     </div>
   );
 }

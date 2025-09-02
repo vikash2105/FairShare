@@ -9,13 +9,31 @@ export default function AIChat({ groupId }) {
   async function submit(e) {
     e.preventDefault();
     if (!message.trim()) return;
+
     const text = message.trim();
     setItems((prev) => [...prev, { type: "user", content: text }]);
     setMessage("");
     setLoading(true);
+
     try {
-      const r = await api.post("/api/ai/chat", { message: text, groupId });
-      setItems((prev) => [...prev, { type: "ai", content: r.data.reply }]);
+      const r = await api.post(`/ai/chat`, { message: text, groupId });
+
+      // normalize response: some cases return reply string, some return arrays
+      let reply = "";
+      if (r.data.reply) {
+        reply = r.data.reply;
+      } else if (Array.isArray(r.data)) {
+        reply = JSON.stringify(r.data, null, 2);
+      } else if (typeof r.data === "object") {
+        reply = JSON.stringify(r.data, null, 2);
+      } else {
+        reply = String(r.data);
+      }
+
+      setItems((prev) => [...prev, { type: "ai", content: reply }]);
+    } catch (err) {
+      console.error("AI chat error:", err);
+      setItems((prev) => [...prev, { type: "ai", content: "❌ Error: AI request failed" }]);
     } finally {
       setLoading(false);
     }
@@ -24,6 +42,8 @@ export default function AIChat({ groupId }) {
   return (
     <div className="card">
       <h3 className="text-lg font-semibold mb-3">AI Assistant</h3>
+
+      {/* Chat history */}
       <div className="space-y-2 mb-3 max-h-64 overflow-auto border rounded-lg p-3 bg-gray-50">
         {items.map((m, i) => (
           <div
@@ -33,7 +53,7 @@ export default function AIChat({ groupId }) {
             }`}
           >
             <span
-              className={`px-3 py-2 rounded-xl max-w-[70%] ${
+              className={`px-3 py-2 rounded-xl max-w-[70%] whitespace-pre-wrap ${
                 m.type === "user"
                   ? "bg-blue-500 text-white"
                   : "bg-gray-200 text-gray-800"
@@ -47,10 +67,12 @@ export default function AIChat({ groupId }) {
           <div className="text-sm text-gray-500 italic">Thinking...</div>
         )}
       </div>
+
+      {/* Input form */}
       <form onSubmit={submit} className="flex gap-2">
         <input
           className="input flex-1"
-          placeholder="Ask about splitting bills..."
+          placeholder='Ask things like: "I paid 10 rupees on chai with Ayush"'
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />

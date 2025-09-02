@@ -19,16 +19,16 @@ export default function GroupDetails({ currentUser }) {
 
   async function refresh() {
     try {
-      const g = await api.get(`/api/groups/${id}`);
+      const g = await api.get(`/groups/${id}`);
       setGroup(g.data);
 
-      const e = await api.get(`/api/expenses/group/${id}`);
+      const e = await api.get(`/expenses/${id}`);
       setExpenses(e.data);
 
-      const b = await api.get(`/api/expenses/group/${id}/balances`);
-      setBalances(b.data);
+      const b = await api.get(`/balances/${id}`);
+      setBalances(b.data.balances || []);
 
-      const s = await api.get(`/api/group/${id}/spins`);
+      const s = await api.get(`/spins/${id}`);
       setSpins(s.data);
     } catch (err) {
       console.error("Error loading group details:", err);
@@ -67,7 +67,7 @@ export default function GroupDetails({ currentUser }) {
           <p className="text-sm text-gray-500 mt-1">
             Members:{" "}
             {group.memberDetails
-              .map((m) => m.name || "Unknown User")
+              ?.map((m) => m.name || "Unknown User")
               .join(", ")}
           </p>
         </div>
@@ -110,12 +110,16 @@ export default function GroupDetails({ currentUser }) {
 
         {/* Tab Content */}
         <div className="mt-4">
-          {activeTab === "expenses" && <ExpenseList expenses={expenses} />}
+          {activeTab === "expenses" && (
+            <ExpenseList groupId={id} expenses={expenses} onRefresh={refresh} />
+          )}
 
-          {activeTab === "balances" && <BalanceView balances={balances} />}
+          {activeTab === "balances" && (
+            <BalanceView balances={balances} />
+          )}
 
           {activeTab === "spin" && (
-            <SpinWheel groupId={id} spins={spins} onSpin={refresh} />
+            <SpinWheel groupId={id} members={group.memberDetails} spins={spins} onSpin={refresh} />
           )}
 
           {activeTab === "ai" && <AIChat groupId={id} />}

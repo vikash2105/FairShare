@@ -118,3 +118,19 @@ export async function getBalances(req, res, next) {
     next(err);
   }
 }
+
+export async function listExpenses(req, res, next) {
+  try {
+    const { groupId } = req.params;
+
+    const expenses = await Expense.find({ groupId })
+      .populate("paidBy", "name email")
+      .populate("splitAmong", "name email")
+      .sort({ createdAt: -1 })
+      .lean();
+
+    res.json(expenses);
+  } catch (err) {
+    next(err);
+  }
+}

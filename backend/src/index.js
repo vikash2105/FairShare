@@ -9,6 +9,8 @@ import groupsRoutes from "./routes/groups.routes.js";
 import expensesRoutes from "./routes/expenses.routes.js";
 import spinsRoutes from "./routes/spins.routes.js";
 import aiRoutes from "./routes/ai.routes.js";
+import balancesRoutes from "./routes/balances.routes.js";
+
 
 dotenv.config();
 
@@ -44,6 +46,8 @@ app.use("/api/groups", groupsRoutes);
 app.use("/api/expenses", expensesRoutes);
 app.use("/api", spinsRoutes);   // /api/group/:id/spin(s)
 app.use("/api/ai", aiRoutes);
+app.use("/api/balances", balancesRoutes);
+
 
 // ✅ Error handler
 app.use(errorHandler);
