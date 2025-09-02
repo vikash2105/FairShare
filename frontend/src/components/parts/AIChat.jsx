@@ -16,7 +16,7 @@ export default function AIChat({ groupId }) {
     setLoading(true);
 
     try {
-      const r = await api.post(`/ai/chat/${groupId}`, { message: text });
+      const r = await api.post(`/api/ai/chat/${groupId}`, { message: text });
 
       let reply = "";
       if (r.data?.reply) {
