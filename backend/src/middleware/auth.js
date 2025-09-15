@@ -1,22 +1,20 @@
-import jwt from "jsonwebtoken";
+// src/middleware/auth.js
+import { verifyJwt } from "../utils/jwt.js";
 
-/**
- * Auth middleware (supports Bearer token)
- * Attaches req.user = { id, name, email }
- */
-export function auth(req, res, next) {
+export function requireAuth(req, res, next) {
   try {
-    const hdr = req.headers.authorization || "";
-    const token = hdr.startsWith("Bearer ") ? hdr.slice(7) : null;
+    const auth = req.headers.authorization || "";
+    const token = auth.startsWith("Bearer ") ? auth.slice(7) : null;
     if (!token) return res.status(401).json({ error: "Unauthorized" });
-    const payload = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { id: payload.id, name: payload.name, email: payload.email };
-    return next();
-  } catch (e) {
+
+    const payload = verifyJwt(token, process.env.JWT_SECRET);
+    req.user = {
+      id: payload.id,
+      email: payload.email,
+      name: payload.name,
+    };
+    next();
+  } catch (err) {
     return res.status(401).json({ error: "Invalid token" });
   }
 }
-
-// Backward compatibility aliases
-export const requireAuth = auth;
-export default auth;

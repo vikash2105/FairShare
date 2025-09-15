@@ -1,8 +1,14 @@
 import { Router } from "express";
-import { auth } from "../middleware/auth.js";
-import { addExpense, listGroupExpenses, getBalances } from "../controllers/expenses.controller.js";
+import { addExpense, getGroupExpenses, getBalances } from "../controllers/expenses.controller.js";
+import { requireAuth } from "../middleware/auth.js";
+import { listExpenses } from "../controllers/expenses.controller.js";
+
 const router = Router();
-router.post("/", auth, addExpense);
-router.get("/group/:groupId", auth, listGroupExpenses);
-router.get("/group/:groupId/balances", auth, getBalances);
+
+router.use(requireAuth);
+
+router.post("/", addExpense);
+router.get("/group/:id", getGroupExpenses);
+router.get("/group/:id/balances", getBalances);
+router.get("/:groupId", requireAuth, listExpenses);
 export default router;
